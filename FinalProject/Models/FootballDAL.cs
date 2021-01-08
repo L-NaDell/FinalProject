@@ -147,7 +147,7 @@ namespace FinalProject.Models
             return r;
         }
 
-        public static FootballMatches GetMatches(string league, string season)
+        public FootballMatches GetMatches(string league, string season)
         {
             string data = CallMatchAPI(league, season);
             FootballMatches r = JsonConvert.DeserializeObject<FootballMatches>(data);

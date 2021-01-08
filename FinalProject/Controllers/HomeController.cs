@@ -49,6 +49,7 @@ namespace FinalProject.Controllers
         }
 
         //figure out what list to display
+        //******_____________Page navigation
         public IActionResult RecentHighlights(int? page)
         {
             List<List<Highlight>> list = _highlightService.GetHighlights();
@@ -107,30 +108,14 @@ namespace FinalProject.Controllers
             }
             return currentList;
         }
+
+        //******_____________Some unused stuff
         public List<CommunityFavoriteVideos> AttachCommentsToCommunityFavoriteVideos(List<CommunityFavoriteVideos> currentList)
         {
             string currentEmbedForView;
             var videoComments = _db.VideoComments.ToList();
             List<CommunityFavoriteVideos> matchingVideos = new List<CommunityFavoriteVideos>();
             var users = _db.AspNetUsers.ToList();
-            // retrieving videos from FavoriteVideos table that has a comment
-
-            //foreach (var match in currentList)
-            //{
-            //        currentEmbedForView = match.;
-            //        foreach (var v in matchingVideos.Distinct())
-            //        {
-            //            if (currentEmbedForView == v.EmbedCode)
-            //            {
-            //                List<VideoComments> vc = videoComments.Where(x => x.VideoId == v.Id).ToList();
-            //                foreach (var item in vc)
-            //                {
-            //                    item.User = _db.AspNetUsers.Where(x => x.Id == item.UserId).FirstOrDefault();
-            //                }
-            //                video.VideoComments = vc;
-            //            }
-            //        }
-            //}
             return currentList;
         }
 
@@ -181,6 +166,7 @@ namespace FinalProject.Controllers
             return View(vc);
         }
 
+        //******_____________Remove comment from cache (fix 7 nested if/foreach)
         public IActionResult DeleteComment(int commentID)
         {
             VideoComments vc = _db.VideoComments.Find(commentID);
@@ -275,6 +261,7 @@ namespace FinalProject.Controllers
             return Redirect(Request.Headers["Referer"].ToString());
         }
 
+        //******_____________Page navigation
         public IActionResult SearchHighlights(string searchFor, int? page)
         {
             List<List<Highlight>> list = _highlightService.SearchHighlights(searchFor);
@@ -305,6 +292,7 @@ namespace FinalProject.Controllers
             return View(emptyList);
         }
 
+        //******_____________add page navigation?
         public IActionResult FavoriteHighlights()
         {
             string currentUser = FindUser();
@@ -327,6 +315,7 @@ namespace FinalProject.Controllers
         }
 
         [HttpPost]
+        //******_____________remove static and use _footballDAL?
         public IActionResult LeagueTeams(string league, string season)
         {
             FootballClubs clubs = FootballDAL.GetTeams(league, season);
@@ -335,13 +324,14 @@ namespace FinalProject.Controllers
 
         public IActionResult MatchResults(string league, string season)
         {
-            FootballMatches clubs = FootballDAL.GetMatches(league, season);
+            FootballMatches clubs = _footballDAL.GetMatches(league, season);
             ViewBag.League = league;
             ViewBag.Season = season;
             return View(clubs);
         }
 
         // Grabbing scores based on rank difference (in standings) and current form (last five games results)
+        //******_____________organize probability; MORE team info converstions 
         public IActionResult Probability(string league, string team1, string team2)
         {
             // Translates between different APIs (standings api and league/results api)
@@ -382,6 +372,7 @@ namespace FinalProject.Controllers
             List<Standing> standingslist = new List<Standing>();
 
             // Filtering through standings and grabbing selected teams (from match results view)
+            //*****Use Linq
             foreach (var item in standings)
             {
                 if (item.team.name == team1)
@@ -405,6 +396,7 @@ namespace FinalProject.Controllers
             string team2Form = standingslist[1].form;
             double team1FormScore = 0;
             double team2FormScore = 0;
+
             foreach (char f in team1Form)
             {
                 if (f == 'W')
@@ -416,6 +408,7 @@ namespace FinalProject.Controllers
                     team1FormScore += 1;
                 }
             }
+
             foreach (char f in team2Form)
             {
                 if (f == 'W')
@@ -431,9 +424,9 @@ namespace FinalProject.Controllers
             // Checks current rank difference between two teams
             int team1Rank = standingslist[0].rank;
             int team2Rank = standingslist[1].rank;
-            double team1RankScore = 0;
-            double team2RankScore = 0;
-            double difference = 0;
+            double team1RankScore;
+            double team2RankScore;
+            double difference;
 
             // Statements to prevent negative number result
             if (team1Rank < team2Rank)
@@ -509,6 +502,7 @@ namespace FinalProject.Controllers
         }
 
         // Translates the team names between the two separate APIs
+        //******_____________Make extention methods for convertions
         public string ConvertTeamEngland(string team)
         {
             switch (team)
@@ -791,11 +785,11 @@ namespace FinalProject.Controllers
         }
 
         [HttpGet]
+        //******_____________MORE Convertion; obj init
         public IActionResult Quiz1(string league, string season)
         {
             string[] questions = new string[3];
-
-            string displayLeague = "";
+            string displayLeague = string.Empty;
 
             // Showing correct league names in question
             switch (league)
@@ -828,7 +822,7 @@ namespace FinalProject.Controllers
 
             if (qIndex == 0)
             {
-                FootballMatches matches = FootballDAL.GetMatches(league, season);
+                FootballMatches matches = _footballDAL.GetMatches(league, season);
 
                 Random r = new Random();
                 int index = r.Next(matches.matches.Count);
@@ -874,6 +868,7 @@ namespace FinalProject.Controllers
                     index = rndIncorrect.Next(1, teams.Length - 1);
                 }
 
+                //************           Use obj init
                 QuestionMultipleChoice options = new QuestionMultipleChoice();
                 options.Question = questions[1];
                 options.CorrectAnswer = correctAnswer;
@@ -945,13 +940,14 @@ namespace FinalProject.Controllers
             return View();
         }
 
+        //******_____________Make a response key thing for "congrats" or "you suck"
         [HttpPost]
         public IActionResult QuizResult(int index, string league, string season, string answer)
         {
-            FootballMatches matches = FootballDAL.GetMatches(league, season);
+            FootballMatches matches = _footballDAL.GetMatches(league, season);
             Match match = matches.matches[index];
 
-            var winner = "";
+            var winner = string.Empty;
 
             if (match.score.ft[0] > match.score.ft[1])
             {
@@ -1040,6 +1036,7 @@ namespace FinalProject.Controllers
             }
         }
 
+        //******_____________Results table order-by
         public IActionResult QuizLeaderboards(string sortOrder)
         {
             ViewData["AttemptsSortParm"] = sortOrder == "Attempts" ? "Attempts_desc" : "Attempts";
@@ -1089,6 +1086,7 @@ namespace FinalProject.Controllers
             _db.SaveChanges();
         }
 
+        //******_____________Divide into list of teams, then list of matches for team; page navigation?
         public IActionResult AddFavoriteTeam()
         {
             CascadingModel cm = new CascadingModel();
@@ -1150,6 +1148,7 @@ namespace FinalProject.Controllers
             return View(cm);
         }
 
+        //******_____________page navigation
         public IActionResult FavoriteTeamHighlights(int? page)
         {
             var favoriteTeams = (from t in _db.UserFavoriteTeams
@@ -1165,6 +1164,7 @@ namespace FinalProject.Controllers
             return View(highlights[(int)page - 1]);
         }
         [Authorize]
+        //******_____________MORE team convertions 
         public IActionResult FavoriteTeams()
         {
             var favoriteTeamsIDs = from t in _db.UserFavoriteTeams
@@ -1187,7 +1187,7 @@ namespace FinalProject.Controllers
 
             foreach (var league in favoriteTeamLeagues)
             {
-                string leagueOut = "";
+                string leagueOut = string.Empty;
                 switch (league)
                 {
                     case "England":
@@ -1218,21 +1218,10 @@ namespace FinalProject.Controllers
 
         public string FindUser()
         {
-            var claimsIdentity = (ClaimsIdentity)this.User.Identity;
-            var claim = claimsIdentity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            string userId = "";
-            if (claim != null)
-            {
-                userId = claim.Value;
-            }
-            return userId;
+            var claimsIdentity = (ClaimsIdentity)User.Identity;
+            var claim = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier);
 
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return claim?.Value ?? string.Empty;
         }
     }
 }
